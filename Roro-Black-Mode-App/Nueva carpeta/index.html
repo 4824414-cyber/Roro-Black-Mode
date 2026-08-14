@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Roro Black Mode</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#020202;color:#eee;font-family:Arial;min-height:100vh}
+.wrap{max-width:1100px;margin:auto;padding:25px}.top{display:flex;justify-content:space-between;border-bottom:1px solid #222;padding-bottom:18px}
+.logo{letter-spacing:7px;font-weight:bold}.status{color:#999;font-size:12px}.dot{display:inline-block;width:7px;height:7px;background:#fff;border-radius:50%;box-shadow:0 0 12px #fff;margin-right:7px}
+.grid{display:grid;grid-template-columns:1fr 360px;gap:16px;margin-top:16px}.panel{background:#080808;border:1px solid #222;border-radius:18px;padding:20px}
+.orb{height:180px;display:grid;place-items:center;font-size:40px}.orb span{display:grid;place-items:center;width:125px;height:125px;border:1px solid #666;border-radius:50%;box-shadow:0 0 45px #222}
+.chat{height:280px;overflow:auto;border-top:1px solid #181818;border-bottom:1px solid #181818;padding:10px}.msg{background:#111;border:1px solid #202020;border-radius:12px;padding:10px;margin:7px 0;font-size:14px}.me{text-align:right}
+.row{display:flex;gap:8px;margin-top:10px}input{flex:1;background:#050505;border:1px solid #292929;color:#fff;border-radius:10px;padding:13px}.btn{background:#eee;color:#000;border:0;border-radius:10px;padding:11px 14px;font-weight:bold;cursor:pointer}.dark{background:#111;color:#eee;border:1px solid #333}
+.toolgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.tool{padding:13px;background:#0b0b0b;border:1px solid #222;border-radius:12px;cursor:pointer}.tool small{display:block;color:#777;margin-top:4px}
+.box{margin-top:12px;padding:13px;border:1px solid #222;border-radius:12px}.log{font:11px monospace;color:#888;padding:6px 0;border-bottom:1px solid #151515}
+.warn{color:#aaa;font-size:12px;line-height:1.5}.fact{color:#aaa;font-size:12px;line-height:1.5}
+.modal{position:fixed;inset:0;background:#000c;display:none;align-items:center;justify-content:center;padding:20px;z-index:9}.modal.show{display:flex}.dialog{max-width:480px;width:100%;background:#0a0a0a;border:1px solid #555;border-radius:18px;padding:22px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}}
+</style></head>
+<body><div class="wrap">
+<div class="top"><div class="logo">R O R O // BLACK MODE</div><div class="status"><i class="dot"></i>ONLINE</div></div>
+<div class="grid"><main class="panel">
+<div class="orb"><span>RØ</span></div>
+<div class="chat" id="chat"><div class="msg"><b>Roro:</b> Navegador preparado. Puedo abrir una página y tomar capturas locales. Las acciones externas requieren permiso.</div></div>
+<div class="row"><input id="text" placeholder="Escribe una URL o una orden..."><button class="btn dark" id="mic">🎙️</button><button class="btn" id="send">ENVIAR</button></div>
+<div class="toolgrid">
+<div class="tool" onclick="ask('open')">🌐 <b>Abrir web</b><small>Requiere permiso</small></div>
+<div class="tool" onclick="ask('shot')">📸 <b>Capturar</b><small>Sin límite artificial</small></div>
+<div class="tool" onclick="ask('close')">⏹ <b>Cerrar navegador</b><small>Requiere permiso</small></div>
+<div class="tool" onclick="listShots()">🗂 <b>Mis capturas</b><small>Ver cantidad guardada</small></div>
+</div></main>
+<aside class="panel"><h3>🔐 PERMISOS</h3><div class="warn">Roro no realiza acciones sensibles automáticamente. Primero pregunta y luego ejecuta.</div>
+<div class="box"><b>📸 CAPTURAS</b><div id="count" style="font-size:28px;margin-top:8px">0</div><div class="warn">No hay un límite impuesto por la app. El límite práctico es el almacenamiento del equipo.</div></div>
+<div class="box"><b>🌎 SISTEMA</b><div class="warn">Navegador Chromium controlado localmente con Playwright.</div></div>
+<div class="box"><b>💡 DATO CURIOSO</b><div class="fact">Una captura de pantalla puede guardarse como archivo de imagen y luego Roro puede analizarla con un modelo de visión cuando conectemos esa parte.</div></div></aside></div>
+</div>
+<div class="modal" id="modal"><div class="dialog"><h2>🔐 Roro pide permiso</h2><p id="question"></p><div class="row"><button class="btn" id="yes">PERMITIR</button><button class="btn dark" id="no">DENEGAR</button></div></div></div>
+<script>
+const $=x=>document.getElementById(x), modal=$('modal');let pending=null;
+function msg(t,me=false){let d=document.createElement('div');d.className='msg'+(me?' me':'');d.innerHTML='<b>'+(me?'Tú':'Roro')+':</b> '+t;$('chat').appendChild(d);$('chat').scrollTop=$('chat').scrollHeight}
+function ask(kind){pending=kind;$('question').textContent=kind==='open'?'Roro quiere abrir la URL que escribiste en un navegador real.':kind==='shot'?'Roro quiere tomar una captura de la página actual.': 'Roro quiere cerrar el navegador.';modal.classList.add('show')}
+$('no').onclick=()=>{modal.classList.remove('show');msg('Entendido. Acción cancelada.')}
+$('yes').onclick=async()=>{let k=pending;modal.classList.remove('show');try{
+ if(k==='open'){let u=$('text').value.trim();if(!/^https?:\\/\\//i.test(u))u='https://'+u;if(!u)throw Error('Escribe una URL');let r=await api('open',u);msg('Navegador abierto: '+r.title)}
+ if(k==='shot'){let r=await api('screenshot','');msg('Captura guardada: '+r.file);listShots()}
+ if(k==='close'){await api('close','');msg('Navegador cerrado.')}
+}catch(e){msg('No pude completar la acción: '+e.message)}}
+async function api(type,value){let r=await fetch('/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type,value})});if(!r.ok)throw Error(await r.text());return r.json()}
+async function listShots(){let r=await fetch('/captures').then(x=>x.json());$('count').textContent=r.count;msg('Tienes '+r.count+' capturas guardadas.')}
+$('send').onclick=()=>{let t=$('text').value.trim();if(!t)return;msg(t,true);if(/^https?:\\/\\//i.test(t)||/^[\\w.-]+\\.[a-z]{2,}/i.test(t)){ask('open')}else if(t.toLowerCase().includes('captura'))ask('shot');else msg('Puedo abrir una URL o tomar una captura. Para otras acciones conectaremos el agente de IA.');}
+$('text').onkeydown=e=>{if(e.key==='Enter')$('send').click()}
+if(window.SpeechRecognition||window.webkitSpeechRecognition){let R=window.SpeechRecognition||window.webkitSpeechRecognition,rec=new R();rec.lang='es-ES';rec.onresult=e=>{$('text').value=e.results[0][0].transcript;$('send').click()};$('mic').onclick=()=>rec.start()}else $('mic').onclick=()=>msg('Tu navegador no ofrece reconocimiento de voz. Usa Chrome o Edge.');
+listShots();
+</script></body></html>
